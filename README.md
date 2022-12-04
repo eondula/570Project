@@ -2,6 +2,7 @@
 ---
 
 Contributors
-Detravious J. Brinkley dbrinkle@usc.edu
+---
+1. Detravious J. Brinkley dbrinkle@usc.edu
 
 
