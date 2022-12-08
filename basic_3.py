@@ -1,3 +1,7 @@
+import sys
+from resource import *
+import time
+import psutil
 input_file_path = "input.txt"
 #print(input_file_path)
 alpha_list = [
@@ -7,6 +11,18 @@ alpha_list = [
     [94, 48, 110, 0]]
 delta_val = 30
 
+def time_wrapper():
+    start_time = time.time()
+    main()
+    end_time = time.time()
+    time_taken = (end_time - start_time)*1000
+    return time_taken
+
+def process_memory():
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_consumed = int(memory_info.rss/1024)
+    return memory_consumed
 
 def get_final_string(k, v):
 
@@ -32,7 +48,7 @@ def get_string_alignment(opt, str1, str2, delta):
   
   m = len(opt) # number of rows
   n = len(opt[0]) # number of cols
-  print(m, n)
+  #print(m, n)
   # while i < m and j
   # # for i in range(m): # index of rows
   # #   for j in range(n-1,-1,-1): # index of cols
@@ -85,19 +101,19 @@ def get_string_alignment(opt, str1, str2, delta):
   # start at here
   while i>=0 and j>=0:
     # base case
-    print(i, j)
+    #print(i, j)
     letterx = str1[j-1]
     lettery = str2[i-1]
     print(letterx, lettery)
     
     if i==0 and j==0:
-      print("end")
+      #print("end")
       break
     
     # first row
     elif i==0:
       # go left
-      print("go left")
+      #print("go left")
       # insert a gap in str2_alignment
       str1_alignment.insert(0,letterx)
       str2_alignment.insert(0,'_')
@@ -106,7 +122,7 @@ def get_string_alignment(opt, str1, str2, delta):
     # first col
     elif j==0:
       # go up
-      print("go up")
+      #print("go up")
       # insert a gap in str1_alignment
       str1_alignment.insert(0,'_')
       str2_alignment.insert(0,lettery)
@@ -114,37 +130,37 @@ def get_string_alignment(opt, str1, str2, delta):
       
     else: # compare opt[i-1][j-1]+alphalist,opt[i-1][j],+delta,opt[i][j-1]+delta
       if (opt[i-1][j-1] + alpha_list[get_alpha(str1[j-1])][get_alpha(str2[i-1])]) == opt[i][j]:
-        print("go up left")
+        #print("go up left")
         str1_alignment.insert(0,letterx) 
         str2_alignment.insert(0,lettery)
         i-=1
         j-=1
       elif opt[i-1][j] + delta_val == opt[i][j]:
-        print("go up")
+        #print("go up")
         str1_alignment.insert(0,"_")
         str2_alignment.insert(0, lettery)
         i-=1
       else:
-        print("go left")
+        #print("go left")
         str1_alignment.insert(0, letterx) 
         str2_alignment.insert(0, "_")    
         j-=1 
   s1,s2 = "".join(str1_alignment),"".join(str2_alignment)
   return s1, s2
   
-with open(input_file_path) as f:
-  l2write = []
-  ns = {}
-  lines = f.readlines()
-  strings = []
-  for i in range(len(lines)):
-    if lines[i].strip().isdigit() == False:
-      l2write.append(0)
-      strings.append(lines[i].rstrip())
-      ns[strings[-1]] = []
-    else:
-      l2write[-1] += 1
-      ns[list(ns)[-1]].append(int(lines[i].rstrip()))
+# with open(input_file_path) as f:
+#   l2write = []
+#   ns = {}
+#   lines = f.readlines()
+#   strings = []
+#   for i in range(len(lines)):
+#     if lines[i].strip().isdigit() == False:
+#       l2write.append(0)
+#       strings.append(lines[i].rstrip())
+#       ns[strings[-1]] = []
+#     else:
+#       l2write[-1] += 1
+#       ns[list(ns)[-1]].append(int(lines[i].rstrip()))
       
   #print(generate_string(ns))
 
@@ -226,13 +242,30 @@ def alignment_cost_2(X, Y, alpha_list, delta):
     return OPT[len(Y)][len(X)], OPT
     # return OPT[i][j]
 
-X = generate_string(ns)[0]
-Y = generate_string(ns)[1]
-# X = "ACTG"
-# Y = "TATT"
+def main():
+  with open(input_file_path) as f:
+    l2write = []
+    ns = {}
+    lines = f.readlines()
+    strings = []
+    for i in range(len(lines)):
+      if lines[i].strip().isdigit() == False:
+        l2write.append(0)
+        strings.append(lines[i].rstrip())
+        ns[strings[-1]] = []
+      else:
+        l2write[-1] += 1
+        ns[list(ns)[-1]].append(int(lines[i].rstrip()))
+        
+    X = generate_string(ns)[0]
+    Y = generate_string(ns)[1]
+    # X = "ACTG"
+    # Y = "TATT"
+    
+    cost, opt = alignment_cost_2(X, Y, alpha_list, delta_val)
+    print(cost)
+    #print(opt)
+    print(get_string_alignment(opt, X, Y, delta_val))
 
-cost, opt = alignment_cost_2(X, Y, alpha_list, delta_val)
-print(cost)
-#print(opt)
-print(get_string_alignment(opt, X, Y, delta_val))
-  
+print("Time taken: ",time_wrapper())
+print("Memory", process_memory() )
