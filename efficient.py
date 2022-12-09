@@ -1,5 +1,30 @@
-input_file_path = "input2.txt"
-print(input_file_path)
+import sys
+from resource import *
+import time
+import psutil
+input_file_path = "input.txt"
+#print(input_file_path)
+alpha_list = [
+    [0, 110, 48, 94],
+    [110, 0, 118, 48],
+    [48, 118, 0, 110],
+    [94, 48, 110, 0]]
+delta_val = 30
+
+#Time
+def time_wrapper():
+    start_time = time.time()
+    main()
+    end_time = time.time()
+    time_taken = (end_time - start_time)*1000
+    return time_taken
+
+#Memory
+def process_memory():
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_consumed = int(memory_info.rss/1024)
+    return memory_consumed
 
 def get_final_string(k, v):
 
@@ -8,37 +33,84 @@ def get_final_string(k, v):
     new_str = s[:i+1] + s + s[i+1:]
     s = new_str
   return s
-  
+
 def generate_string(my_dict):
   f_strings = []
   for i, (k, v) in enumerate(my_dict.items()):
     f_strings.append(get_final_string(k, v))
   return f_strings
-  
-with open(input_file_path) as f:
-  l2write = []
-  ns = {}
-  lines = f.readlines()
-  strings = []
-  for i in range(len(lines)):
-    if lines[i].strip().isdigit() == False:
-      l2write.append(0)
-      strings.append(lines[i].rstrip())
-      ns[strings[-1]] = []
-    else:
-      l2write[-1] += 1
-      ns[list(ns)[-1]].append(int(lines[i].rstrip()))
-      
-  print(generate_string(ns))
+
+
+def get_string_alignment(opt, str1, str2, delta):
+  """
+  return str1_alignment, str2_alignment
+  """
+  str1_alignment = []
+  str2_alignment = []
+
+  m = len(opt) # number of rows
+  n = len(opt[0]) # number of cols
+
+  i,j = m-1,n-1 # i corresponds to rows, j corresponds to cols
+
+
+  # start at here
+  while i>=0 and j>=0:
+    # base case
+    letterx = str1[j-1]
+    lettery = str2[i-1]
+
+    if i==0 and j==0:
+      #print("end")
+      break
+
+    # first row
+    elif i==0:
+      # go left
+      #print("go left")
+      # insert a gap in str2_alignment
+      str1_alignment.insert(0,letterx)
+      str2_alignment.insert(0,'_')
+      j-=1
+
+    # first col
+    elif j==0:
+      # go up
+      #print("go up")
+      # insert a gap in str1_alignment
+      str1_alignment.insert(0,'_')
+      str2_alignment.insert(0,lettery)
+      i-=1
+
+    else: # compare opt[i-1][j-1]+alphalist,opt[i-1][j],+delta,opt[i][j-1]+delta
+      if (opt[i-1][j-1] + alpha_list[get_alpha(str1[j-1])][get_alpha(str2[i-1])]) == opt[i][j]:
+        #print("go up left")
+        str1_alignment.insert(0,letterx)
+        str2_alignment.insert(0,lettery)
+        i-=1
+        j-=1
+      elif opt[i-1][j] + delta_val == opt[i][j]:
+        #print("go up")
+        str1_alignment.insert(0,"_")
+        str2_alignment.insert(0, lettery)
+        i-=1
+      else:
+        #print("go left")
+        str1_alignment.insert(0, letterx)
+        str2_alignment.insert(0, "_")
+        j-=1
+  s1,s2 = "".join(str1_alignment),"".join(str2_alignment)
+  return s1, s2
+
 
 # {"ACTG": [3, 6, 1], 1: [1, 2, 9]}
 def get_alpha(x):
     '''Match letters
-    x -- char 
-    
+    x -- char
+
     return -- alpha int
     '''
-    
+
     if x == 'A':
         return 0
     elif x == 'C':
@@ -47,7 +119,7 @@ def get_alpha(x):
         return 2
     elif x == 'T':
         return 3
-      
+
 def alignment_cost_2(X, Y, alpha_list, delta):
     '''
     alpha -- 2D list
@@ -57,66 +129,168 @@ def alignment_cost_2(X, Y, alpha_list, delta):
     '''
     X_length = len(X)
     Y_length = len(Y)
-    
+
     # cols (x) by rows (y) =>
     OPT = [[0 for x in range(X_length + 1)] for y in range(Y_length + 1)]
-    # print(X_length, "\n", Y_length, "\n", OPT)
 
 #     Base cases/Initialize
     OPT[0][0] = 0
-    
+
     # To fill the rows we need the columns to change, we are moving from col 0 ... x_len; going column by column; fixed/initialize on row
     for col in range(X_length + 1):
         # print(col)
         OPT[0][col] = col * delta
         # print(OPT, np.shape(OPT))
-    
-    # To fill the col we need the row to change, we are moving from row 0 ... y_len; going row by row; fixed/initialize on col    
+
+    # To fill the col we need the row to change, we are moving from row 0 ... y_len; going row by row; fixed/initialize on col
     for row in range(Y_length + 1):
         # print(col)
         OPT[row][0] = row * delta
         # print(OPT)
 
-    # print("\n", np.array(OPT).T)
-#         Recurrence Formula
-    # print(OPT)
-    
+
     # i reps the colums; outter loop reps cols
     for i in range(1, X_length + 1):
         # j reps the rows; inner loop reps rows
         for j in range(1, Y_length + 1):
-            # print(i, j)
             x_i = X[i - 1]
-            y_j = Y[j - 1] 
-            # print(x_i, y_j)
-            # print("before:, ", OPT)
-            # print(get_alpha(x_i), get_alpha(y_j))
+            y_j = Y[j - 1]
+
             alpha = alpha_list[get_alpha(x_i)][get_alpha(y_j)]
-            # alpha = alpha_list[get_alpha(y_j)][get_alpha(x_i)]
-            # print(alpha)
-            # print(alpha + OPT[i - 1][j - 1],
-            #             delta + OPT[i - 1][j],
-            #             delta + OPT[i][j - 1])
             OPT[j][i] = min(
                         alpha + OPT[j - 1][i - 1],
                         delta + OPT[j - 1][i],
                         delta + OPT[j][i - 1]
             )
-            # print("after:, ", OPT)
-            # print()  
-    # print(OPT)
+
     # return OPT[X_length][Y_length]
     return OPT[len(Y)][len(X)]
     # return OPT[i][j]
 
-X = generate_string(ns)[0]
-Y = generate_string(ns)[1]
+def efficient_v(X, Y, alpha_list, delta): # efficient version of alignment_cost_2
+  ''''
+    alpha -- 2D list
+    x -- char
+    y -- char
+    return -- array of cost
+  '''
+  X_length = len(X)
+  Y_length = len(Y)
 
-alpha_list = [
-    [0, 110, 48, 94],
-    [110, 0, 118, 48],
-    [48, 118, 0, 110],
-    [94, 48, 110, 0]
-]
-print("Alignment cost: ",alignment_cost_2(X, Y, alpha_list, 30))
-  
+  # array1 = [0 for _ in range(Y_length+1)]
+  # array2 = [0 for _ in range(Y_length+1)]
+  array = [[0 for _ in range(5)] for _ in range(5)]
+
+  # initialization
+  for i in range(1,Y_length+1):
+    array[0][i] = i * delta
+
+  # recurrence formula
+  for j in range(1, X_length + 1):
+
+    array[j][0] = j * delta
+  for j in range(1, X_length + 1):
+
+    for i in range(1, Y_length + 1):
+      str1_val = get_alpha(X[j-1])
+      str2_val = get_alpha(Y[i-1])
+
+
+      # base case
+      # if i == 0:
+
+      #else:
+      array[j][i] = min(array[j-1][i] + delta, array[j][i-1] + delta, array[j-1][i-1] + alpha_list[str1_val][str2_val])
+      # array1 = array2[:]
+
+      #array1,array2 = array2,array1
+    print(j)
+    print(array)
+    # print(array1)
+    # print(array2)
+  return array
+
+def hirschberg_algorithm(x, y):
+  # base case: if either string is empty, return the length of the other string
+  if len(x) == 0:
+    return len(y)
+  if len(y) == 0:
+    return len(x)
+
+  # divide the problem into two smaller subproblems
+  xmid = len(x) // 2
+  score_l, score_r = [], []
+  for j in range(len(y)+1):
+    # compute the cost of aligning x[:xmid] with y[:j]
+    # cost = 0
+    # for i in range(xmid):
+    #   # if x[i] != y[j+i]:
+    #   #   cost += 1
+    # score_l.append(cost)
+    # call another dp function f: x,y -> array of cost
+    score_l = efficient_v(x[:xmid],y)
+
+    # compute the cost of aligning x[xmid:] with y[j:]
+    # cost = 0
+    # for i in range(xmid, len(x)):
+    #   if x[i] != y[j+i]:
+    #     costt += 1
+    # score_r.append(cost)
+    # call another dp function f: x,y -> array of cost
+    score_r = efficient_v(x[xmid:],y)
+    print(score_l, score_r)
+  return score_l, score_r
+
+  # find the minimum cost alignment in the left and right subproblems
+  # min_score_l = min(score_l)
+  # min_score_r = min(score_r)
+  # min_index_l = score_l.index(min_score_l)
+  # min_index_r = score_r.index(min_score_r)
+
+  # combine the results from the left and right subproblems
+  # if min_score_l + min_score_r < len(x):
+  #   return min_score_l + min_score_r
+  # else:
+  #   return len(x)
+
+
+
+
+def main():
+  with open(input_file_path) as f:
+    l2write = []
+    ns = {}
+    lines = f.readlines()
+    strings = []
+    for i in range(len(lines)):
+      if lines[i].strip().isdigit() == False:
+        l2write.append(0)
+        strings.append(lines[i].rstrip())
+        ns[strings[-1]] = []
+      else:
+        l2write[-1] += 1
+        ns[list(ns)[-1]].append(int(lines[i].rstrip()))
+
+    X = generate_string(ns)[0]
+    Y = generate_string(ns)[1]
+    # X = "ACTG"
+    # Y = "TATT"
+
+  #cost, opt = alignment_cost_2(X, Y, alpha_list, delta_val)
+
+  arr1 =efficient_v(X, Y, alpha_list, delta_val)
+  print(arr1)
+  # # print(get_string_alignment(opt, X, Y, delta_val))
+  # str_alignments_1, str_alignments_2 = get_string_alignment(opt, X, Y, delta_val)
+  # print("--", str_alignments_1, "\n", str_alignments_2)
+
+if __name__ == "__main__":
+  main()
+
+#   input_file_name = sys.argv[1]
+#   output_file_name = sys.argv[2]
+#   # print(input_file_name, output_file_name)
+#   main()
+
+# print("Time taken: ",time_wrapper())
+# print("Memory", process_memory() )
